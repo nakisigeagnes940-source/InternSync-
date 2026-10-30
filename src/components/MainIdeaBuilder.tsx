@@ -233,7 +233,8 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
 
   // Active prompt, images & logbook state - default to empty on fresh boot
   const [prompt, setPrompt] = useState<string>('');
-  const [department, setDepartment] = useState<string>('Front Office');
+  const [department, setDepartment] = useState<string>('');
+  const [isViewingSession, setIsViewingSession] = useState<boolean>(false);
   const [uploadedImages, setUploadedImages] = useState<UploadedLogbookImage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedEntry, setGeneratedEntry] = useState<string | null>(null);
@@ -281,14 +282,21 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
     });
   };
 
-  // Clear active session on browser hard reload
+  // Clear Firebase / LocalStorage Cache on App Boot unless URL session param is present
   useEffect(() => {
-    const navEntries = performance.getEntriesByType('navigation');
-    if (navEntries.length > 0 && (navEntries[0] as PerformanceNavigationTiming).type === 'reload') {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session');
+
+    if (!sessionId) {
+      localStorage.removeItem('current_logbook_draft');
+      setIsViewingSession(false);
+      setDepartment('');
+      setPrompt('');
       setActiveSessionId(null);
       setGeneratedEntry(null);
-      setPrompt('');
-      localStorage.removeItem('current_logbook_entry');
+    } else {
+      setIsViewingSession(true);
+      setActiveSessionId(sessionId);
     }
   }, []);
 
@@ -581,21 +589,29 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
     setGeneratedEntry(session.generatedOutput || null);
     setUploadedImages(session.images || []);
     if (session.department) setDepartment(session.department);
+    setIsViewingSession(true);
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
   };
 
-  const handleNewSession = () => {
+  const handleClearView = () => {
     setActiveSessionId(null);
-    setPrompt('');
     setGeneratedEntry(null);
+    setIsViewingSession(false);
+    setDepartment('');
+    setPrompt('');
     setUploadedImages([]);
     setErrorMessage(null);
+    window.history.replaceState({}, document.title, window.location.pathname);
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
     textareaRef.current?.focus();
+  };
+
+  const handleNewSession = () => {
+    handleClearView();
   };
 
   const handleDeleteSession = (sessionId: string, e: React.MouseEvent) => {
@@ -783,14 +799,14 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
           </p>
 
           {/* Active Session Pill */}
-          {activeSessionId && (
+          {isViewingSession && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="mt-3 inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-semibold border border-emerald-300 shadow-sm"
             >
               <span>Viewing entry from session</span>
-              <button onClick={handleNewSession} className="hover:bg-emerald-200 rounded-full p-0.5 cursor-pointer">
+              <button onClick={handleClearView} className="hover:bg-emerald-200 rounded-full p-0.5 cursor-pointer">
                 <X className="w-3.5 h-3.5" />
               </button>
             </motion.div>
