@@ -1,0 +1,41 @@
+{
+  "entities": {
+    "LogbookSession": {
+      "title": "Logbook Session",
+      "description": "Stored daily internship logbook session entries",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "prompt": { "type": "string" },
+        "generatedOutput": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "date": { "type": "number" },
+        "department": { "type": "string" },
+        "category": { "type": "string" }
+      },
+      "required": ["id", "title", "generatedOutput"]
+    },
+    "AppVisitor": {
+      "title": "App Visitor",
+      "description": "Tracks unique devices and phones that accessed the app",
+      "type": "object",
+      "properties": {
+        "deviceId": { "type": "string" },
+        "lastActive": { "type": "number" },
+        "userAgent": { "type": "string" }
+      },
+      "required": ["deviceId", "lastActive"]
+    }
+  },
+  "firestore": {
+    "/sessions/{sessionId}": {
+      "schema": "LogbookSession",
+      "description": "User logbook sessions collection"
+    },
+    "/app_visitors/{visitorId}": {
+      "schema": "AppVisitor",
+      "description": "Tracks unique phone and device access count"
+    }
+  }
+}

@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+:root {
+  --bg-gradient: linear-gradient(180deg, #f8fafc 0%, #edf2f7 50%, #dbe3ed 100%);
+  --bg-base: #edf2f7;
+  --surface: #ffffff;
+  --surface-border: rgba(30, 58, 95, 0.12);
+  --surface-shadow: 0 4px 20px rgba(30, 58, 95, 0.08);
+  --text-primary: #1e3a5f;
+  --text-secondary: #536b85;
+  --text-muted: #849bb4;
+  --accent: #1e3a5f;
+  --accent-cyan: #64d2da;
+  --accent-glow: rgba(100, 210, 218, 0.4);
+  --btn-bg: #e2eaf2;
+  --btn-hover: #d4e2ed;
+  --chip-bg: #ffffff;
+  --chip-hover: #f1f5fa;
+}
+
+.dark {
+  --bg-gradient: linear-gradient(180deg, #131314 0%, #131314 100%);
+  --bg-base: #131314;
+  --surface: #1e1f20;
+  --surface-border: rgba(255, 255, 255, 0.06);
+  --surface-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --text-primary: #e3e2e6;
+  --text-secondary: #c4c6d0;
+  --text-muted: #8e918f;
+  --accent: #a8c7fa;
+  --accent-cyan: #64d2da;
+  --accent-glow: rgba(168, 199, 250, 0.4);
+  --btn-bg: #1e1f20;
+  --btn-hover: #2a2b2d;
+  --chip-bg: #1e1f20;
+  --chip-hover: #2a2b2d;
+}
+
+@layer base {
+  body {
+    font-family: 'Google Sans', 'Inter', 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "InternSync ",
+  "description": "An AI-powered smart logbook assistant designed for vocational and hospitality trainees to convert quick task summaries into structured, professional daily logbook entries.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
