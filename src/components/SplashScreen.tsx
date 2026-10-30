@@ -66,7 +66,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         className="flex flex-col items-center justify-center text-center px-4"
         id="splash-brand-content"
       >
-        <div className="p-4 rounded-3xl shadow-xl mb-4 bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10">
+        <div className="mb-4">
           <AppLogo
             size={100}
             className={isLight ? 'text-[#1e3a5f]' : 'text-[#a8c7fa]'}
@@ -82,7 +82,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
             isLight ? 'text-[#1e3a5f]' : 'text-white'
           }`}
         >
-          Logbook
+          InternSync
         </motion.h1>
       </div>
 

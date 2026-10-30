@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAifCj3wIbgOazj2atjPDtzbKAFPu4Ry78",
@@ -14,12 +14,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
-// Initialize Firestore with robust local offline persistence cache to prevent network timeout warnings
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager()
-  })
-}, "ai-studio-logbookaibuildyo-593763b5-abd1-4d37-98c4-0ffcdd0d95a9");
+// Initialize Firestore safely
+export const db = getFirestore(app, "ai-studio-internsync-90160725-742d-4a4f-ab0e-7788742fe611");
 
 export async function ensureAuthenticated(): Promise<string> {
   try {

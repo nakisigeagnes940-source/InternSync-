@@ -82,7 +82,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({
             <div className="flex items-center gap-2.5">
               <AppLogo size={24} animated={false} />
               <div>
-                <h2 className="font-semibold text-sm tracking-tight">Logbook Entries</h2>
+                <h2 className="font-semibold text-sm tracking-tight">InternSync Entries</h2>
                 <p className={`text-[11px] ${isLight ? 'text-[#64748b]' : 'text-[#8e918f]'}`}>
                   {sessions.length} {sessions.length === 1 ? 'entry' : 'entries'}
                 </p>
@@ -102,7 +102,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({
             </button>
           </div>
 
-          {/* New Logbook Entry Button */}
+          {/* New Entry Button */}
           <button
             onClick={onNewSession}
             className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-medium text-sm transition-all duration-150 cursor-pointer shadow-xs mb-3 ${
@@ -113,7 +113,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({
             id="btn-new-logbook-entry"
           >
             <Plus className="w-4 h-4" />
-            <span>New Logbook Entry</span>
+            <span>New InternSync Entry</span>
           </button>
 
           {/* Search Filter */}
@@ -130,7 +130,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search past logbook entries..."
+                placeholder="Search past entries..."
                 className="w-full bg-transparent border-none outline-none placeholder:text-slate-400 text-xs"
                 id="input-search-history"
               />
@@ -150,7 +150,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({
             {filteredSessions.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-48 text-center p-4">
                 <Clock className="w-8 h-8 opacity-30 mb-2" />
-                <p className="text-xs font-medium opacity-60">No logbook entries found</p>
+                <p className="text-xs font-medium opacity-60">No entries found</p>
               </div>
             ) : (
               filteredSessions.map((session) => {

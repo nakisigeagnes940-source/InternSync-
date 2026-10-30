@@ -228,23 +228,15 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
     return INITIAL_SESSIONS;
   });
 
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(() => {
-    return sessions.length > 0 ? sessions[0].id : null;
-  });
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Active prompt, images & logbook state - default to most recent session or Front Office
-  const [prompt, setPrompt] = useState<string>(() => {
-    return sessions.length > 0 ? sessions[0].prompt || '' : '';
-  });
-  const [department, setDepartment] = useState<string>(() => {
-    return sessions.length > 0 ? sessions[0].department || 'Front Office' : 'Front Office';
-  });
+  // Active prompt, images & logbook state - default to empty on fresh boot
+  const [prompt, setPrompt] = useState<string>('');
+  const [department, setDepartment] = useState<string>('Front Office');
   const [uploadedImages, setUploadedImages] = useState<UploadedLogbookImage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedEntry, setGeneratedEntry] = useState<string | null>(() => {
-    return sessions.length > 0 ? sessions[0].generatedOutput || null : null;
-  });
+  const [generatedEntry, setGeneratedEntry] = useState<string | null>(null);
   const [generationSource, setGenerationSource] = useState<string>('');
   const [remainingGenerations, setRemainingGenerations] = useState<number>(3);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -288,6 +280,17 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
       img.onerror = () => resolve(base64Str);
     });
   };
+
+  // Clear active session on browser hard reload
+  useEffect(() => {
+    const navEntries = performance.getEntriesByType('navigation');
+    if (navEntries.length > 0 && (navEntries[0] as PerformanceNavigationTiming).type === 'reload') {
+      setActiveSessionId(null);
+      setGeneratedEntry(null);
+      setPrompt('');
+      localStorage.removeItem('current_logbook_entry');
+    }
+  }, []);
 
   // Load sessions from Firebase Firestore on mount
   useEffect(() => {
@@ -738,7 +741,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
             <ThemeToggle />
           </div>
 
-          {/* Right: Developer Stats & Download App */}
+          {/* Right: Developer Stats */}
           <div className="flex items-center gap-2">
             {onOpenDevStats && (
               <button
@@ -755,27 +758,12 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
                 <span className="hidden sm:inline">Dev Stats</span>
               </button>
             )}
-            {onOpenDownloadModal && localStorage.getItem('logbook_app_installed') !== 'true' && (
-              <button
-                onClick={onOpenDownloadModal}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border shadow-2xs ${
-                  isLight
-                    ? 'bg-white border-[#cbd8e6] text-[#1e3a5f] hover:bg-[#f1f5f9]'
-                    : 'bg-[#1e1f20] border-white/10 text-[#a8c7fa] hover:bg-[#282a2c]'
-                }`}
-                title="Install app on your phone desktop or home screen"
-                id="btn-download-app-header"
-              >
-                <Smartphone size={13} />
-                <span>Install on Phone</span>
-              </button>
-            )}
           </div>
         </header>
 
         {/* Main Center Area */}
         <main className="flex flex-col items-center justify-center text-center my-auto py-2 px-2 sm:px-4" id="hero-center-area">
-          {/* Exact Checkmark Logbook Logo */}
+          {/* Exact Checkmark InternSync Logo */}
           <div className="mb-4">
             <AppLogo
               size={72}
@@ -784,18 +772,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
             />
           </div>
 
-          {/* Hero Title and Purpose Description */}
-          <motion.h1
-            initial={{ y: 12, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
-            className={`text-2xl sm:text-3xl font-bold tracking-tight max-w-[480px] transition-colors duration-300 ${
-              isLight ? 'text-[#1e3a5f]' : 'text-[#e3e2e6]'
-            }`}
-            id="hero-main-title"
-          >
-            Logbook
-          </motion.h1>
+
 
           <p
             className={`mt-2 text-xs sm:text-sm max-w-[440px] leading-relaxed transition-colors duration-300 ${
@@ -810,20 +787,11 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
-                isLight
-                  ? 'bg-white border-[#cbd8e6] text-[#1e3a5f]'
-                  : 'bg-[#1e1f20] border-white/10 text-[#a8c7fa]'
-              }`}
+              className="mt-3 inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-semibold border border-emerald-300 shadow-sm"
             >
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
               <span>Viewing entry from session</span>
-              <button
-                onClick={handleNewSession}
-                className="ml-1 opacity-60 hover:opacity-100 cursor-pointer"
-                title="Start new entry"
-              >
-                ×
+              <button onClick={handleNewSession} className="hover:bg-emerald-200 rounded-full p-0.5 cursor-pointer">
+                <X className="w-3.5 h-3.5" />
               </button>
             </motion.div>
           )}
@@ -1037,180 +1005,6 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
                 </button>
               </div>
             </div>
-          </div>
-
-          {/* Quick Suggestion Chips for Receptionist & Hotel Departments */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none" id="suggestion-chips-row">
-            <button
-              onClick={() => {
-                setDepartment('Front Office');
-                handleChipClick('Managed guest check-ins and check-outs, verified reservation details in Opera PMS, and processed folio settlement payments.');
-              }}
-              className={`border rounded-full py-2 px-3.5 text-xs flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition-colors shrink-0 ${
-                department === 'Front Office'
-                  ? isLight
-                    ? 'bg-[#1e3a5f] text-white border-[#1e3a5f] shadow-sm'
-                    : 'bg-[#a8c7fa] text-[#041e49] border-[#a8c7fa] shadow-sm'
-                  : isLight
-                  ? 'bg-white border-[#d5e2ed] text-[#1e3a5f] hover:bg-[#edf2f7] shadow-2xs'
-                  : 'bg-[#1e1f20] border-transparent text-[#e3e2e6] hover:bg-[#2a2b2d]'
-              }`}
-              id="chip-checkins"
-            >
-              <span>🏨 Check-ins & Check-outs</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setDepartment('Front Office');
-                handleChipClick('Handled multi-line switchboard calls, transferred guest inquiries, took accurate messages, and communicated wake-up call requests.');
-              }}
-              className={`border rounded-full py-2 px-3.5 text-xs flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition-colors shrink-0 ${
-                department === 'Front Office'
-                  ? isLight
-                    ? 'bg-[#1e3a5f] text-white border-[#1e3a5f] shadow-sm'
-                    : 'bg-[#a8c7fa] text-[#041e49] border-[#a8c7fa] shadow-sm'
-                  : isLight
-                  ? 'bg-white border-[#d5e2ed] text-[#1e3a5f] hover:bg-[#edf2f7] shadow-2xs'
-                  : 'bg-[#1e1f20] border-transparent text-[#e3e2e6] hover:bg-[#2a2b2d]'
-              }`}
-              id="chip-switchboard"
-            >
-              <span>📞 Switchboard & Calls</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setDepartment('Front Office');
-                handleChipClick('Managed electronic room key encoding, verified guest authorization queries, and resolved safe-deposit box access requests.');
-              }}
-              className={`border rounded-full py-2 px-3.5 text-xs flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition-colors shrink-0 ${
-                department === 'Front Office'
-                  ? isLight
-                    ? 'bg-[#1e3a5f] text-white border-[#1e3a5f] shadow-sm'
-                    : 'bg-[#a8c7fa] text-[#041e49] border-[#a8c7fa] shadow-sm'
-                  : isLight
-                  ? 'bg-white border-[#d5e2ed] text-[#1e3a5f] hover:bg-[#edf2f7] shadow-2xs'
-                  : 'bg-[#1e1f20] border-transparent text-[#e3e2e6] hover:bg-[#2a2b2d]'
-              }`}
-              id="chip-key-management"
-            >
-              <span>🔑 Room Key Management</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setDepartment('Food Production');
-                handleChipClick('Executed morning kitchen mise en place, portioned poultry according to recipe yields, and logged walk-in chiller temperatures for HACCP compliance.');
-              }}
-              className={`border rounded-full py-2 px-3.5 text-xs flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition-colors shrink-0 ${
-                department === 'Food Production'
-                  ? isLight
-                    ? 'bg-[#1e3a5f] text-white border-[#1e3a5f] shadow-sm'
-                    : 'bg-[#a8c7fa] text-[#041e49] border-[#a8c7fa] shadow-sm'
-                  : isLight
-                  ? 'bg-white border-[#d5e2ed] text-[#1e3a5f] hover:bg-[#edf2f7] shadow-2xs'
-                  : 'bg-[#1e1f20] border-transparent text-[#e3e2e6] hover:bg-[#2a2b2d]'
-              }`}
-              id="chip-food-production"
-            >
-              <span>🍳 Food Production</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setDepartment('Barista');
-                handleChipClick('Calibrated espresso grinder dose (18.5g in, 38g out in 27s), textured velvety microfoam for specialty lattes, and backflushed machine with Cafiza.');
-              }}
-              className={`border rounded-full py-2 px-3.5 text-xs flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition-colors shrink-0 ${
-                department === 'Barista'
-                  ? isLight
-                    ? 'bg-[#1e3a5f] text-white border-[#1e3a5f] shadow-sm'
-                    : 'bg-[#a8c7fa] text-[#041e49] border-[#a8c7fa] shadow-sm'
-                  : isLight
-                  ? 'bg-white border-[#d5e2ed] text-[#1e3a5f] hover:bg-[#edf2f7] shadow-2xs'
-                  : 'bg-[#1e1f20] border-transparent text-[#e3e2e6] hover:bg-[#2a2b2d]'
-              }`}
-              id="chip-barista"
-            >
-              <span>☕ Barista</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setDepartment('Tour Guide');
-                handleChipClick('Conducted 3-hour guided heritage tour for 14 visitors, presented architectural commentary on historic monuments, and coordinated group safety.');
-              }}
-              className={`border rounded-full py-2 px-3.5 text-xs flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition-colors shrink-0 ${
-                department === 'Tour Guide'
-                  ? isLight
-                    ? 'bg-[#1e3a5f] text-white border-[#1e3a5f] shadow-sm'
-                    : 'bg-[#a8c7fa] text-[#041e49] border-[#a8c7fa] shadow-sm'
-                  : isLight
-                  ? 'bg-white border-[#d5e2ed] text-[#1e3a5f] hover:bg-[#edf2f7] shadow-2xs'
-                  : 'bg-[#1e1f20] border-transparent text-[#e3e2e6] hover:bg-[#2a2b2d]'
-              }`}
-              id="chip-tour-guide"
-            >
-              <span>🗺️ Tour Guide</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setDepartment('Housekeeping');
-                handleChipClick('Serviced guest rooms and executive suites, conducted turndown service, replenished guest amenities, and inspected linen cleanliness.');
-              }}
-              className={`border rounded-full py-2 px-3.5 text-xs flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition-colors shrink-0 ${
-                department === 'Housekeeping'
-                  ? isLight
-                    ? 'bg-[#1e3a5f] text-white border-[#1e3a5f] shadow-sm'
-                    : 'bg-[#a8c7fa] text-[#041e49] border-[#a8c7fa] shadow-sm'
-                  : isLight
-                  ? 'bg-white border-[#d5e2ed] text-[#1e3a5f] hover:bg-[#edf2f7] shadow-2xs'
-                  : 'bg-[#1e1f20] border-transparent text-[#e3e2e6] hover:bg-[#2a2b2d]'
-              }`}
-              id="chip-housekeeping"
-            >
-              <span>🧹 Housekeeping</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setDepartment('Food & Beverage Service');
-                handleChipClick('Setup dining room tables, welcomed guests, took food and beverage orders, and cleared plates during lunch service.');
-              }}
-              className={`border rounded-full py-2 px-3.5 text-xs flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition-colors shrink-0 ${
-                department === 'Food & Beverage Service'
-                  ? isLight
-                    ? 'bg-[#1e3a5f] text-white border-[#1e3a5f] shadow-sm'
-                    : 'bg-[#a8c7fa] text-[#041e49] border-[#a8c7fa] shadow-sm'
-                  : isLight
-                  ? 'bg-white border-[#d5e2ed] text-[#1e3a5f] hover:bg-[#edf2f7] shadow-2xs'
-                  : 'bg-[#1e1f20] border-transparent text-[#e3e2e6] hover:bg-[#2a2b2d]'
-              }`}
-              id="chip-fb-service"
-            >
-              <span>🍽️ F&B Service</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setDepartment('Laundry & Linen');
-                handleChipClick('Sorted commercial laundry loads, operated industrial washing and drying machines, and pressed staff uniforms and table linen.');
-              }}
-              className={`border rounded-full py-2 px-3.5 text-xs flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition-colors shrink-0 ${
-                department === 'Laundry & Linen'
-                  ? isLight
-                    ? 'bg-[#1e3a5f] text-white border-[#1e3a5f] shadow-sm'
-                    : 'bg-[#a8c7fa] text-[#041e49] border-[#a8c7fa] shadow-sm'
-                  : isLight
-                  ? 'bg-white border-[#d5e2ed] text-[#1e3a5f] hover:bg-[#edf2f7] shadow-2xs'
-                  : 'bg-[#1e1f20] border-transparent text-[#e3e2e6] hover:bg-[#2a2b2d]'
-              }`}
-              id="chip-laundry"
-            >
-              <span>🧺 Laundry & Linen</span>
-            </button>
           </div>
         </section>
       </div>

@@ -172,34 +172,16 @@ export const PhysicalLogbookCard: React.FC<PhysicalLogbookCardProps> = ({
       id="physical-logbook-card"
     >
       {/* Top Banner: Logbook Verification Header & Actions */}
-      <div
-        className={`px-4 py-3 flex flex-wrap items-center justify-between gap-2 border-b ${
-          isLight ? 'bg-[#f1f5f9] border-[#e2e8f0]' : 'bg-[#1e2023] border-white/5'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <div
-            className={`p-1.5 rounded-lg ${
-              isLight ? 'bg-[#1e3a5f] text-white' : 'bg-[#a8c7fa] text-[#041e49]'
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-xs uppercase tracking-wider">
-                Official Physical Logbook Sheet
-              </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="w-3 h-3" /> Ready for Paper Transcription
-              </span>
-            </div>
-            <p className="text-[11px] opacity-60">
-              Matched strictly to university & polytechnic 4-column physical logbook layout
-            </p>
-          </div>
+      <div className="bg-white dark:bg-[#1e1f20] rounded-2xl p-4 border border-slate-200 dark:border-white/10 shadow-sm mb-4">
+        <div className="flex items-center gap-2 mb-1">
+          <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <h3 className="font-bold text-slate-900 dark:text-white text-base">
+            Daily Logbook Entry Sheet
+          </h3>
         </div>
-
+        <p className="text-xs text-slate-600 dark:text-slate-300 text-left">
+          Clean, structured tasks ready to copy directly into your physical institutional logbook.
+        </p>
       </div>
 
       {/* Main Content Area */}

@@ -3,13 +3,11 @@ import { AnimatePresence, motion } from 'motion/react';
 import { ThemeProvider, useTheme } from './ThemeContext';
 import { SplashScreen } from './components/SplashScreen';
 import { MainIdeaBuilder } from './components/MainIdeaBuilder';
-import { DownloadAppModal } from './components/DownloadAppModal';
 import { PasswordLockModal } from './components/PasswordLockModal';
 import { UserNamePromptModal } from './components/UserNamePromptModal';
 
 function AppContent() {
   const [currentView, setCurrentView] = useState<'splash' | 'main'>('splash');
-  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showDevModal, setShowDevModal] = useState(false);
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const { theme } = useTheme();
@@ -33,16 +31,11 @@ function AppContent() {
           >
             <SplashScreen
               onProceed={() => {
-                const savedName = localStorage.getItem('logbook_user_name');
+                const savedName = localStorage.getItem('internsync_user_name') || localStorage.getItem('logbook_user_name');
                 if (!savedName) {
                   setShowNamePrompt(true);
                 } else {
                   setCurrentView('main');
-                  const isInstalled = localStorage.getItem('logbook_app_installed') === 'true' ||
-                    (typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches);
-                  if (!isInstalled) {
-                    setShowDownloadModal(true);
-                  }
                 }
               }}
             />
@@ -57,7 +50,6 @@ function AppContent() {
             className="w-full h-full"
           >
             <MainIdeaBuilder
-              onOpenDownloadModal={() => setShowDownloadModal(true)}
               onOpenDevStats={() => setShowDevModal(true)}
             />
           </motion.div>
@@ -70,18 +62,7 @@ function AppContent() {
         onComplete={() => {
           setShowNamePrompt(false);
           setCurrentView('main');
-          const isInstalled = localStorage.getItem('logbook_app_installed') === 'true' ||
-            (typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches);
-          if (!isInstalled) {
-            setShowDownloadModal(true);
-          }
         }}
-      />
-
-      {/* Download App Pop-up Modal when splash screen concludes (if not installed) */}
-      <DownloadAppModal
-        isOpen={showDownloadModal}
-        onClose={() => setShowDownloadModal(false)}
       />
 
       {/* Developer Stats Password Modal */}
