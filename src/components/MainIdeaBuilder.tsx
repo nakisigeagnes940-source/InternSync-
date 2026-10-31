@@ -6,12 +6,8 @@ import {
   Camera,
   Image as ImageIcon,
   X,
-  Sparkles,
   Loader2,
-  CheckCircle2,
   AlertCircle,
-  Download,
-  Smartphone,
 } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 import { ThemeToggle } from './ThemeToggle';
@@ -198,20 +194,24 @@ const INITIAL_SESSIONS: AppSession[] = [
   },
 ];
 
-interface MainIdeaBuilderProps {
+export interface MainIdeaBuilderProps {
   onShowSplash?: () => void;
   onOpenDownloadModal?: () => void;
   onOpenDevStats?: () => void;
+  generatedEntry?: string | null;
+  generationSource?: string;
+  handleClearView?: () => void;
 }
 
-export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
+export function MainIdeaBuilder({
   onShowSplash,
   onOpenDownloadModal,
   onOpenDevStats,
-}) => {
+}: MainIdeaBuilderProps) {
   const { theme } = useTheme();
   const isLight = theme === 'light';
 
+  // Sessions and History state
   const [sessions, setSessions] = useState<AppSession[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -224,12 +224,13 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
         console.error('Failed to parse saved sessions:', err);
       }
     }
-    return [];
+    return INITIAL_SESSIONS;
   });
 
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // Active prompt, images & logbook state - default to empty on fresh boot
   const [prompt, setPrompt] = useState<string>('');
   const [department, setDepartment] = useState<string>('');
   const [isViewingSession, setIsViewingSession] = useState<boolean>(false);
@@ -248,6 +249,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Compress and resize image to prevent localStorage quota issues
   const compressImage = (base64Str: string, maxWidth = 800, maxHeight = 800, quality = 0.65): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -279,6 +281,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
     });
   };
 
+  // Clear Firebase / LocalStorage Cache on App Boot unless URL session param is present
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get('session');
@@ -296,6 +299,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
     }
   }, []);
 
+  // Load sessions from Firebase Firestore on mount
   useEffect(() => {
     let isMounted = true;
     async function loadCloudSessions() {
@@ -320,6 +324,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
     return () => { isMounted = false; };
   }, []);
 
+  // Save sessions to localStorage cache immediately, and debounced Smart Auto-Save sync to Firebase Firestore
   useEffect(() => {
     try {
       const optimizedSessions = sessions.slice(0, 10).map((s, idx) => {
@@ -340,6 +345,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
     const timer = setTimeout(async () => {
       try {
         const uid = await ensureAuthenticated();
+        // Sync only the most recent/active session to avoid write stream exhaustion
         const sessionsToSync = sessions.slice(0, 3);
         for (const s of sessionsToSync) {
           const sessionToSave = {
@@ -354,6 +360,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
         }
         setSyncStatus('synced');
       } catch (err: any) {
+        // If offline or network timeout, local persistence has saved it safely
         if (!navigator.onLine || (err && err.code === 'unavailable')) {
           setSyncStatus('synced');
         } else {
@@ -366,6 +373,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
     return () => clearTimeout(timer);
   }, [sessions]);
 
+  // Focus input on load and fetch initial usage quota
   useEffect(() => {
     const timer = setTimeout(() => {
       textareaRef.current?.focus();
@@ -394,11 +402,6 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
     return () => clearTimeout(timer);
   }, []);
 
-  const handleChipClick = (text: string) => {
-    setPrompt(text);
-    textareaRef.current?.focus();
-  };
-
   const handleImageFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setErrorMessage(null);
@@ -411,6 +414,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
         continue;
       }
 
+      // Read as base64 and compress
       try {
         const rawBase64 = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
@@ -520,7 +524,9 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
       const entryText = data.content;
       setGeneratedEntry(entryText);
       setGenerationSource(data.source || 'gemini-3.8-flash');
+      setIsViewingSession(false);
 
+      // Update or create session
       const titleCandidate = trimmedPrompt
         ? trimmedPrompt.length > 32
           ? `${trimmedPrompt.slice(0, 32)}...`
@@ -592,7 +598,19 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
     setPrompt('');
     setUploadedImages([]);
     setErrorMessage(null);
-    window.history.replaceState({}, document.title, window.location.pathname);
+    localStorage.removeItem('current_logbook_draft');
+    localStorage.removeItem('current_logbook_entry');
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has('session')) {
+          url.searchParams.delete('session');
+          window.history.replaceState({}, document.title, url.pathname + (url.search || ''));
+        }
+      } catch {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
@@ -645,6 +663,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
         }
       }}
     >
+      {/* Hidden File Inputs */}
       <input
         type="file"
         ref={fileInputRef}
@@ -664,6 +683,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
         id="input-camera-logbook"
       />
 
+      {/* Collapsible History Sidebar */}
       <HistorySidebar
         isOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen((prev) => !prev)}
@@ -675,8 +695,11 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
         onClearAll={handleClearAll}
       />
 
+      {/* Main Workspace Area */}
       <div className="flex-1 h-full flex flex-col justify-between overflow-y-auto p-3 sm:p-4 z-10">
+        {/* Top App Bar Header */}
         <header className="flex justify-between items-center py-2 px-1 w-full z-20" id="top-bar-header">
+          {/* Left: Sidebar Toggle & New Entry */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsSidebarOpen((prev) => !prev)}
@@ -711,6 +734,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
             </button>
           </div>
 
+          {/* Center: Smart Auto-Save Badge & Theme Toggle */}
           <div className="flex items-center gap-3" id="header-center-wrapper">
             <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border shadow-2xs transition-colors"
               id="smart-auto-save-pill"
@@ -740,6 +764,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
             <ThemeToggle />
           </div>
 
+          {/* Right: Developer Stats */}
           <div className="flex items-center gap-2">
             {onOpenDevStats && (
               <button
@@ -759,7 +784,9 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
           </div>
         </header>
 
+        {/* Main Center Area */}
         <main className="flex flex-col items-center justify-center text-center my-auto py-2 px-2 sm:px-4" id="hero-center-area">
+          {/* Exact Checkmark InternSync Logo */}
           <div className="mb-4">
             <AppLogo
               size={72}
@@ -776,6 +803,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
             Upload workplace photos or describe tasks to generate structured, professional entries ready to copy into your physical logbook.
           </p>
 
+          {/* Active Session Pill */}
           {isViewingSession && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -789,6 +817,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
             </motion.div>
           )}
 
+          {/* Error Message Toast */}
           {errorMessage && (
             <motion.div
               initial={{ opacity: 0, y: 6 }}
@@ -800,6 +829,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
             </motion.div>
           )}
 
+          {/* Generated Logbook Entry Card */}
           {generatedEntry && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
@@ -816,7 +846,9 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
           )}
         </main>
 
+        {/* Bottom Section: Upload, Prompt Box & Internship Chips */}
         <section className="w-full max-w-[620px] mx-auto flex flex-col gap-3 mb-2 z-10" id="bottom-controls-section">
+          {/* Main Prompt & Image Upload Box */}
           <div
             className={`rounded-[24px] p-4 sm:p-5 flex flex-col justify-between min-h-[175px] relative transition-all duration-300 ${
               isDragging
@@ -827,10 +859,12 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
             }`}
             id="prompt-card"
           >
+            {/* Daily Usage Limit Badge Component */}
             <div className="mb-3">
               <GenerationLimitBadge remaining={remainingGenerations} isLight={isLight} />
             </div>
 
+            {/* Department Selector Dropdown in Form */}
             <div className="flex items-center justify-between gap-2 mb-3 pb-2.5 border-b border-inherit relative">
               <span className={`text-xs font-semibold uppercase tracking-wider ${isLight ? 'text-[#334155]' : 'text-slate-300'}`}>
                 Department / Rotation:
@@ -846,6 +880,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
                 }`}
                 id="department-form-select"
               >
+                <option value="">Select Department...</option>
                 <option value="Front Office">🛎️ Front Office</option>
                 <option value="Housekeeping">🧹 Housekeeping</option>
                 <option value="Food & Beverage Service">🍽️ F&B Service</option>
@@ -856,6 +891,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
               </select>
             </div>
 
+            {/* Uploaded Photos Carousel */}
             {uploadedImages.length > 0 && (
               <div className="flex flex-wrap gap-2.5 mb-3 pb-2 border-b border-inherit">
                 {uploadedImages.map((img) => (
@@ -887,6 +923,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
               </div>
             )}
 
+            {/* Textarea for daily notes / description */}
             <textarea
               ref={textareaRef}
               value={prompt}
@@ -917,8 +954,11 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
               id="prompt-textarea"
             />
 
+            {/* Bottom Actions Row */}
             <div className="flex justify-between items-center pt-2">
+              {/* Left Action Buttons: Photo Upload & Camera */}
               <div className="flex items-center gap-1.5">
+                {/* Upload Photo Button */}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -935,6 +975,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
                   <span className="hidden sm:inline">Upload Photo</span>
                 </button>
 
+                {/* Camera Capture Button */}
                 <button
                   type="button"
                   onClick={() => cameraInputRef.current?.click()}
@@ -951,6 +992,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
                 </button>
               </div>
 
+              {/* Right Action: Send Button using the Exact Checkmark Logbook Logo */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleGenerateLogbook}
@@ -975,6 +1017,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
                       }`}
                     />
                   ) : (
+                    /* The user's exact uploaded checkmark logbook logo embedded directly on the send button */
                     <AppLogo
                       size={22}
                       className={isLight ? 'text-white' : 'text-[#041e49]'}
@@ -988,6 +1031,7 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
         </section>
       </div>
 
+      {/* Settings / Department Modal */}
       <AnimatePresence>
         {isSettingsOpen && (
           <div
@@ -1126,4 +1170,6 @@ export const MainIdeaBuilder: React.FC<MainIdeaBuilderProps> = ({
       </AnimatePresence>
     </div>
   );
-};
+}
+
+export default MainIdeaBuilder;
