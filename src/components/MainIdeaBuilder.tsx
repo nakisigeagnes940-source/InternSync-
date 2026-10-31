@@ -72,10 +72,17 @@ export function MainIdeaBuilder({
   // Active prompt, images & logbook state - default to empty on fresh boot
   const [prompt, setPrompt] = useState<string>('');
   const [department, setDepartment] = useState<string>('');
-  const [isViewingSession, setIsViewingSession] = useState<boolean>(false);
+  const [isViewingSavedSession, setIsViewingSavedSession] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return Boolean(params.get('session'));
+    }
+    return false;
+  });
   const [uploadedImages, setUploadedImages] = useState<UploadedLogbookImage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedEntry, setGeneratedEntry] = useState<string | null>(null);
+  const isViewingSession = Boolean(activeSessionId && generatedEntry && isViewingSavedSession);
   const [generationSource, setGenerationSource] = useState<string>('');
   const [remainingGenerations, setRemainingGenerations] = useState<number>(3);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -127,13 +134,13 @@ export function MainIdeaBuilder({
 
     if (!sessionId) {
       localStorage.removeItem('current_logbook_draft');
-      setIsViewingSession(false);
+      setIsViewingSavedSession(false);
       setDepartment('');
       setPrompt('');
       setActiveSessionId(null);
       setGeneratedEntry(null);
     } else {
-      setIsViewingSession(true);
+      setIsViewingSavedSession(true);
       setActiveSessionId(sessionId);
     }
   }, []);
@@ -391,7 +398,7 @@ export function MainIdeaBuilder({
       const entryText = data.content;
       setGeneratedEntry(entryText);
       setGenerationSource(data.source || 'gemini-3.8-flash');
-      setIsViewingSession(false);
+      setIsViewingSavedSession(false);
 
       // Update or create session
       const titleCandidate = trimmedPrompt
@@ -452,7 +459,7 @@ export function MainIdeaBuilder({
     setGeneratedEntry(output);
     setUploadedImages(session.images || []);
     if (session.department) setDepartment(session.department);
-    setIsViewingSession(Boolean(output));
+    setIsViewingSavedSession(Boolean(output));
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
@@ -461,7 +468,7 @@ export function MainIdeaBuilder({
   const handleClearView = () => {
     setActiveSessionId(null);
     setGeneratedEntry(null);
-    setIsViewingSession(false);
+    setIsViewingSavedSession(false);
     setDepartment('');
     setPrompt('');
     setUploadedImages([]);
