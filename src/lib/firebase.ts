@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, signInAnonymously } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -19,6 +19,17 @@ export const db = getFirestore(app, "ai-studio-internsync-90160725-742d-4a4f-ab0
 
 export async function ensureAuthenticated(): Promise<string> {
   try {
+    if (!auth.currentUser) {
+      try {
+        const cred = await signInAnonymously(auth);
+        if (cred.user) return cred.user.uid;
+      } catch (authErr) {
+        console.warn('Anonymous sign-in notice:', authErr);
+      }
+    }
+    if (auth.currentUser) {
+      return auth.currentUser.uid;
+    }
     let uid = localStorage.getItem('logbook_user_id');
     if (!uid) {
       uid = `user-${Math.random().toString(36).substring(2, 10)}-${Date.now()}`;
