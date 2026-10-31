@@ -173,11 +173,23 @@ export const PhysicalLogbookCard: React.FC<PhysicalLogbookCardProps> = ({
     >
       {/* Top Banner: Logbook Verification Header & Actions */}
       <div className="bg-white dark:bg-[#1e1f20] rounded-2xl p-4 border border-slate-200 dark:border-white/10 shadow-sm mb-4">
-        <div className="flex items-center gap-2 mb-1">
-          <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          <h3 className="font-bold text-slate-900 dark:text-white text-base">
-            Daily Logbook Entry Sheet
-          </h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 mb-1">
+            <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-base">
+              Daily Logbook Entry Sheet
+            </h3>
+          </div>
+          {onClear && (
+            <button
+              type="button"
+              onClick={onClear}
+              className="text-xs font-semibold px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+              title="Close and clear view"
+            >
+              Clear view
+            </button>
+          )}
         </div>
         <p className="text-xs text-slate-600 dark:text-slate-300 text-left">
           Clean, structured tasks ready to copy directly into your physical institutional logbook.
