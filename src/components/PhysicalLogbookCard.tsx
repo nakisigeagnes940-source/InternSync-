@@ -183,7 +183,11 @@ export const PhysicalLogbookCard: React.FC<PhysicalLogbookCardProps> = ({
           {onClear && (
             <button
               type="button"
-              onClick={onClear}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClear();
+              }}
               className="text-xs font-semibold px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
               title="Close and clear view"
             >
@@ -376,7 +380,12 @@ export const PhysicalLogbookCard: React.FC<PhysicalLogbookCardProps> = ({
           }`}
         >
           <button
-            onClick={onClear}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClear();
+            }}
             className="hover:underline cursor-pointer opacity-75 hover:opacity-100 text-xs"
           >
             Clear view

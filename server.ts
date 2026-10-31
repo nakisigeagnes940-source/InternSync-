@@ -123,6 +123,8 @@ Followed immediately by a clean Markdown transcription of the Physical Logbook S
 // OpenRouter candidate models
 const OPENROUTER_CANDIDATE_MODELS = [
   process.env.OPENROUTER_MODEL,
+  'meta-llama/llama-3.1-8b-instruct:free',
+  'meta-llama/llama-3.1-8b-instruct',
   'google/gemini-2.5-flash',
   'openai/gpt-4o-mini',
   'deepseek/deepseek-chat',
@@ -171,8 +173,8 @@ async function callOpenRouter(
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,
-          'HTTP-Referer': process.env.APP_URL || 'https://ai.studio',
-          'X-Title': 'Student Physical Internship Logbook AI',
+          'HTTP-Referer': process.env.APP_URL || 'https://internsync.vercel.app',
+          'X-Title': 'InternSync',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -528,8 +530,8 @@ app.get('/api/usage', async (req, res) => {
   }
 });
 
-// Primary Live Internship Logbook Generation Endpoint
-app.post('/api/generate-logbook', async (req, res) => {
+// Primary Live Internship Logbook Generation Endpoint & Alias
+async function handleGenerateLogbook(req: express.Request, res: express.Response) {
   let effectiveDayAndDate = '';
   let activeDepartment = '';
   let activeSection = '';
@@ -812,7 +814,10 @@ CRITICAL FORMATTING REQUIREMENT (Matching physical logbook sheet):
       remainingGenerations: remainingGenerations !== undefined ? remainingGenerations : 2,
     });
   }
-});
+}
+
+app.post('/api/generate-logbook', handleGenerateLogbook);
+app.post('/api/generate', handleGenerateLogbook);
 
 // Vite integration
 async function startServer() {

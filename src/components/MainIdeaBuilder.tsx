@@ -359,6 +359,22 @@ export function MainIdeaBuilder({
         signal: controller.signal,
       });
 
+      // Guard against server HTML error pages (404/500) before parsing JSON
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenRouter/Server error details:', errorText);
+        let errorMsg = `Server returned error ${response.status}`;
+        try {
+          const parsed = JSON.parse(errorText);
+          if (parsed && parsed.error) {
+            errorMsg = parsed.error;
+          }
+        } catch {
+          // Response is HTML or plain text (e.g. Vercel / server crash)
+        }
+        throw new Error(errorMsg);
+      }
+
       const data = await response.json();
 
       if (typeof data.remainingGenerations === 'number') {
@@ -431,11 +447,12 @@ export function MainIdeaBuilder({
 
   const handleSelectSession = (session: AppSession) => {
     setActiveSessionId(session.id);
-    setPrompt(session.prompt);
-    setGeneratedEntry(session.generatedOutput || null);
+    setPrompt(session.prompt || '');
+    const output = session.generatedOutput || null;
+    setGeneratedEntry(output);
     setUploadedImages(session.images || []);
     if (session.department) setDepartment(session.department);
-    setIsViewingSession(true);
+    setIsViewingSession(Boolean(output));
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
@@ -669,7 +686,11 @@ export function MainIdeaBuilder({
               <span>Viewing entry from session</span>
               <button
                 type="button"
-                onClick={handleClearView}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleClearView();
+                }}
                 className="hover:bg-emerald-200 rounded-full p-0.5 cursor-pointer transition-colors"
                 title="Clear view"
                 aria-label="Clear view"
