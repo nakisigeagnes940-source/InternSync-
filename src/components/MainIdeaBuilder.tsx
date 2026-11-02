@@ -339,68 +339,60 @@ export function MainIdeaBuilder({
         year: 'numeric',
       });
 
-      const payload = {
-        prompt: trimmedPrompt,
-        department,
-        dayAndDate: liveDateStr,
-        images: uploadedImages.map((img) => ({
-          mimeType: img.mimeType,
-          base64: img.base64,
-          name: img.name,
-        })),
-      };
-
-      let clientId = localStorage.getItem('logbook_client_id');
-      if (!clientId) {
-        clientId = `client-${Math.random().toString(36).substring(2)}-${Date.now()}`;
-        localStorage.setItem('logbook_client_id', clientId);
+      let userContent: any = `Write a professional, structured daily logbook entry for date: ${liveDateStr}. Task description: "${trimmedPrompt || 'Workplace observation / task'}"`;
+      
+      if (uploadedImages.length > 0) {
+        userContent = [
+          {
+            type: 'text',
+            text: `Write a professional, structured daily logbook entry for date: ${liveDateStr}. Task description: "${trimmedPrompt || 'Workplace observation / task with attached photo'}"`
+          },
+          ...uploadedImages.map(img => ({
+            type: 'image_url',
+            image_url: {
+              url: img.base64
+            }
+          }))
+        ];
       }
 
-      const response = await fetch('/api/generate-logbook', {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY || ''}`,
+          'HTTP-Referer': 'https://internsync.vercel.app',
+          'X-Title': 'InternSync',
           'Content-Type': 'application/json',
-          'x-client-id': clientId,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            {
+              role: 'system',
+              content: `You are an expert assistant helping hospitality and vocational trainees write professional, structured daily logbook entries for their department (${department || 'General Hospitality'}).`
+            },
+            {
+              role: 'user',
+              content: userContent
+            }
+          ],
+        }),
         signal: controller.signal,
       });
 
-      // Guard against server HTML error pages (404/500) before parsing JSON
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('OpenRouter/Server error details:', errorText);
-        let errorMsg = `Server returned error ${response.status}`;
-        try {
-          const parsed = JSON.parse(errorText);
-          if (parsed && parsed.error) {
-            errorMsg = parsed.error;
-          }
-        } catch {
-          // Response is HTML or plain text (e.g. Vercel / server crash)
-        }
-        throw new Error(errorMsg);
+        const errText = await response.text();
+        throw new Error(`OpenRouter error (${response.status}): ${errText}`);
       }
 
       const data = await response.json();
+      const generatedText = data.choices[0].message.content;
 
-      if (typeof data.remainingGenerations === 'number') {
-        setRemainingGenerations(data.remainingGenerations);
-      } else {
-        setRemainingGenerations((prev) => Math.max(0, prev - 1));
-      }
-
-      if (response.status === 429 || !data.success) {
-        setRemainingGenerations(0);
-        throw new Error(data.error || 'You have reached your daily limit of 3 free logbook entries! Please try again tomorrow.');
-      }
-
-      const entryText = data.content;
-      setGeneratedEntry(entryText);
-      setGenerationSource(data.source || 'gemini-3.8-flash');
+      setRemainingGenerations((prev) => Math.max(0, prev - 1));
+      setGeneratedEntry(generatedText);
+      setGenerationSource('google/gemini-2.5-flash');
       setIsViewingSavedSession(false);
 
-      // Update or create session
       const titleCandidate = trimmedPrompt
         ? trimmedPrompt.length > 32
           ? `${trimmedPrompt.slice(0, 32)}...`
@@ -415,7 +407,7 @@ export function MainIdeaBuilder({
                   ...s,
                   title: titleCandidate,
                   prompt: trimmedPrompt || 'Photo-based internship logbook entry',
-                  generatedOutput: entryText,
+                  generatedOutput: generatedText,
                   timestamp: 'Just now',
                   date: Date.now(),
                   department,
@@ -429,7 +421,7 @@ export function MainIdeaBuilder({
           id: `session-${Date.now()}`,
           title: titleCandidate,
           prompt: trimmedPrompt || 'Photo-based internship logbook entry',
-          generatedOutput: entryText,
+          generatedOutput: generatedText,
           timestamp: 'Just now',
           date: Date.now(),
           department,
@@ -443,8 +435,8 @@ export function MainIdeaBuilder({
       if (err.name === 'AbortError') {
         console.log('Generation aborted by user.');
       } else {
-        console.error('Generation error:', err);
-        setErrorMessage(err.message || 'Error communicating with Logbook.');
+        console.error('Generation failed:', err);
+        setErrorMessage(err.message || 'Error communicating with OpenRouter.');
       }
     } finally {
       setIsGenerating(false);
