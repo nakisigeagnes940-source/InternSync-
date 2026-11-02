@@ -1,12 +1,12 @@
 {
-  "projectId": "predictive-coder-1xjsq",
-  "appId": "1:617920453540:web:c500593e6ec14fc9717f31",
-  "apiKey": "AIzaSyAifCj3wIbgOazj2atjPDtzbKAFPu4Ry78",
-  "authDomain": "predictive-coder-1xjsq.firebaseapp.com",
+  "projectId": "internsync-20f2b",
+  "appId": "1:741209658402:web:44676337ab8c422546e67b",
+  "apiKey": "AIzaSyA5qCRvdHNWRxfQCvyc_ewzkuQPnapZVTA",
+  "authDomain": "internsync-20f2b.firebaseapp.com",
   "firestoreDatabaseId": "ai-studio-internsync-90160725-742d-4a4f-ab0e-7788742fe611",
-  "storageBucket": "predictive-coder-1xjsq.firebasestorage.app",
-  "messagingSenderId": "617920453540",
+  "storageBucket": "internsync-20f2b.firebasestorage.app"",
+  "messagingSenderId": "741209658402",
   "measurementId": "",
-  "oAuthClientId": "617920453540-qh8rir1hg9gib0efkn2cm86r39kq4adp.apps.googleusercontent.com",
+  "oAuthClientId": "741209658402-qh8rir1hg9gib0efkn2cm86r39kq4adp.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }
